@@ -1,12 +1,10 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:17
-    container_name: management_system_postgres
+    container_name: kanri_system_postgres
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: management_system
+      POSTGRES_USER: kanrisys
+      POSTGRES_PASSWORD: kanrisys
+      POSTGRES_DB: kanri_system
     ports:
       - "5432:5432"
