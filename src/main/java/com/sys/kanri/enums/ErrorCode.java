@@ -8,11 +8,29 @@ public enum ErrorCode {
     EMAIL_EXISTS("U40902", "Email đã được sử dụng", HttpStatus.CONFLICT),
     INVALID_CREDENTIALS("U40101", "Sai tên đăng nhập hoặc mật khẩu", HttpStatus.UNAUTHORIZED),
 
-    // Token-related
-    TOKEN_INVALID("T40101", "Token không hợp lệ", HttpStatus.UNAUTHORIZED),
+    // Password-related
+    OLD_PASSWORD_MISMATCH("P40001", "Mật khẩu cũ không đúng", HttpStatus.BAD_REQUEST),
+    NEW_PASSWORD_SAME_AS_OLD("P40002", "Mật khẩu mới không được giống mật khẩu cũ", HttpStatus.BAD_REQUEST),
+    PASSWORD_CHANGE_FAILED("P50001", "Không thể đổi mật khẩu", HttpStatus.INTERNAL_SERVER_ERROR),
 
-    // Server or unknown errors
-    INTERNAL_ERROR("E50000", "Lỗi hệ thống", HttpStatus.INTERNAL_SERVER_ERROR);
+    // Authorization/Authentication
+    UNAUTHORIZED_ACCESS("A40101", "Bạn không có quyền truy cập", HttpStatus.UNAUTHORIZED),
+
+    // Role
+    ROLE_NOT_FOUND("R40401", "Không tìm thấy quyền", HttpStatus.NOT_FOUND),
+    ROLE_DUPLICATED("R40901", "Quyền đã tồn tại", HttpStatus.CONFLICT),
+    ROLE_ACCESS_DENIED("R40301", "Bạn không có quyền truy cập", HttpStatus.FORBIDDEN),
+
+    // Order errors
+    ORDER_NOT_FOUND("O40401", "Không tìm thấy đơn hàng", HttpStatus.NOT_FOUND),
+    ORDER_INVALID_STATUS("O40001", "Trạng thái đơn hàng không hợp lệ", HttpStatus.BAD_REQUEST),
+
+    // Product errors
+    PRODUCT_NOT_FOUND("O40401", "Không tìm thấy đơn hàng", HttpStatus.NOT_FOUND),
+    PRODUCT_INVALID_STATUS("O40001", "Trạng thái đơn hàng không hợp lệ", HttpStatus.BAD_REQUEST),
+
+    // System errors
+    INTERNAL_ERROR("S50001", "Lỗi hệ thống", HttpStatus.INTERNAL_SERVER_ERROR);
 
     public final String code;
     public final String message;
@@ -23,5 +41,4 @@ public enum ErrorCode {
         this.message = message;
         this.status = status;
     }
-
 }

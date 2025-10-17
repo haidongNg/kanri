@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Getter
 @Builder
@@ -14,4 +15,5 @@ public class ApiErrorResponse {
     private String message;
     private String code;
     private String path;
+    private Map<String, String> errors;
 }

@@ -1,24 +1,32 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
 spring:
   application:
     name: kanri
-  mvc:
-    servlet:
-      path: /api/v1
   datasource:
     url: jdbc:postgresql://db:5432/kanri_system
-    username: kanrisys
-    password: kanrisys
+    username: kanri_sys
+    password: kanri_sys
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: create-drop
-    show-sql: true
+      ddl-auto: update
     properties:
       hibernate:
-        format_sql: true
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
-server:
-  port: 8080
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: true
+    open-in-view: false
+  sql:
+    init:
+      mode: always
+      continue-on-error: true
+  logging:
+    level:
+      org.hibernate.SQL: debug
+      org.hibernate.type.descriptor.sql: trace
+
 jwt:
-  secret: your256bitsecretkeyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-  expiration: 86400000 # 24 hours (milliseconds)
+  secret: "SGVsbG8gSmF2YSBJc2FueG9vbCBUaGlzIHNlY3JldCBLZXkgZm9yIEpXVCAoMjU2IGJpdCBTZWN1cmUp"
+  expiration: 3600000   # 1h (ms)

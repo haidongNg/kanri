@@ -11,6 +11,10 @@ public abstract class BaseController {
         return ResponseFactory.ok(data, message);
     }
 
+    protected <T> ResponseEntity<ApiSuccessResponse<T>> ok(T data) {
+        return ResponseFactory.ok(data, "");
+    }
+
     protected <T> ResponseEntity<ApiSuccessResponse<T>> created(T data, String message) {
         return ResponseFactory.success(data, message, HttpStatus.CREATED);
     }

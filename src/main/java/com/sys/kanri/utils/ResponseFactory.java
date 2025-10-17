@@ -8,6 +8,9 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.Instant;
+import java.util.Collections;
+import java.util.Map;
+
 import jakarta.servlet.http.HttpServletRequest;
 
 public class ResponseFactory {
@@ -47,6 +50,24 @@ public class ResponseFactory {
                 .message(message)
                 .code(code)
                 .path(path)
+                .errors(Collections.emptyMap())
+                .build();
+
+        return ResponseEntity.status(status).body(response);
+    }
+
+    public static ResponseEntity<ApiErrorResponse> error(String code, String message, HttpStatus status, Map<String, String> errors) {
+        HttpServletRequest request = currentRequest();
+        String path = (request != null) ? request.getRequestURI() : "N/A";
+
+        ApiErrorResponse response = ApiErrorResponse.builder()
+                .timestamp(Instant.now())
+                .status(status.value())
+                .error(status.getReasonPhrase())
+                .message(message)
+                .code(code)
+                .path(path)
+                .errors(errors)
                 .build();
 
         return ResponseEntity.status(status).body(response);

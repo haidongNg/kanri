@@ -1,6 +1,5 @@
 package com.sys.kanri.exceptions;
 
-import com.sys.kanri.dto.AuthResponseDto;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
