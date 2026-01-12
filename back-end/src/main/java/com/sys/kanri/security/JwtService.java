@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -22,6 +23,9 @@ public class JwtService {
 
     @Value("${jwt.expiration}")
     private long jwtExpiration;
+
+    @Value("${jwt.refresh-expiration}")
+    private long refreshExpiration;
 
     private SecretKey secretKey;
     private io.jsonwebtoken.JwtParser jwtParser;
@@ -63,14 +67,37 @@ public class JwtService {
     }
 
     /**
+     * Generates an access token with optional extra claims and a specified username.
+     * The token is built using the configured JWT expiration time.
+     *
+     * @param extraClaims Additional claims to include in the token.
+     * @param username The username to associate with the token.
+     * @return A signed JWT access token as a string.
+     */
+    public String generateAccessToken(Map<String, Object> extraClaims, String username) {
+        return buildToken(extraClaims, username, jwtExpiration);
+    }
+
+    /**
+     * Generates a signed JWT refresh token associated with the specified username.
+     * The token is built using the configured refresh token expiration time.
+     *
+     * @param username The username to associate with the refresh token.
+     * @return A signed JWT refresh token as a string.
+     */
+    public String generateRefreshToken(String username) {
+        return buildToken(new HashMap<>(), username, refreshExpiration);
+    }
+
+    /**
      * Sinh JWT mới với các claim tùy chỉnh.
      * @param extraClaims Các claims bổ sung.
      * @param username Tên người dùng.
      * @return Chuỗi JWT đã được ký.
      */
-    public String generateToken(Map<String, Object> extraClaims, String username) {
+    public String buildToken(Map<String, Object> extraClaims, String username, long expiration) {
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtExpiration);
+        Date expiryDate = new Date(now.getTime() + expiration);
 
         return Jwts.builder()
                 .claims(extraClaims)

@@ -9,10 +9,12 @@ import com.sys.kanri.entities.Member;
 import com.sys.kanri.entities.Role;
 import com.sys.kanri.enums.RoleType;
 import com.sys.kanri.exceptions.ApiException;
+import com.sys.kanri.mapper.MemberMapper;
 import com.sys.kanri.repositories.MemberRepository;
 import com.sys.kanri.repositories.RoleRepository;
 import com.sys.kanri.services.MemberService;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +22,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -34,10 +37,13 @@ public class MemberServiceImpl implements MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
+    private final MemberMapper memberMapper;
 
     /**
-     * @param username
-     * @return
+     * Finds a member by their username.
+     *
+     * @param username the username of the member to be retrieved
+     * @return an {@link Optional} containing the {@link Member} if found, or an empty {@link Optional} if no member with the given username exists
      */
     @Override
     public Optional<Member> findByUsername(String username) {
@@ -45,8 +51,11 @@ public class MemberServiceImpl implements MemberService {
     }
 
     /**
-     * @param id
-     * @return
+     * Retrieves a member by their unique identifier.
+     *
+     * @param id the unique identifier of the member to be retrieved
+     * @return a MemberResDto object containing the details of the member
+     * @throws ApiException if the member with the specified id is not found
      */
     @Override
     public MemberResDto getMemberById(Long id) {
@@ -56,18 +65,37 @@ public class MemberServiceImpl implements MemberService {
                         USERNAME_EXISTS.code,
                         USERNAME_EXISTS.status
                 ));
-        return convertToDto(member);
+        return memberMapper.toDto(member);
     }
 
     /**
-     * @param id
+     * Deletes a member entity identified by the given ID.
+     * This method removes the entity with the specified ID from the repository.
+     * If no entity with the given ID exists, the method will not throw an exception.
+     *
+     * @param id the unique identifier of the entity to be deleted
      */
     @Override
     public void deleteById(Long id) {
         memberRepository.deleteById(id);
     }
 
+    /**
+     * Registers a new member in the system. This method performs checks to ensure
+     * the uniqueness of the username and email, assigns a role based on the provided
+     * mode, and saves the new member to the database.
+     *
+     * @param request an object containing the registration details of the member
+     *                such as username, password, full name, email, phone, address,
+     *                image URL, and gender.
+     * @param mode a string that determines the role to be assigned to the member.
+     *             If the mode matches "SUPPORT", the SUPPORT role will be assigned;
+     *             otherwise, the CUSTOMER role will be assigned.
+     * @throws ApiException if the provided username or email already exists in the system,
+     *                      or if the specified role is not found in the database.
+     */
     @Override
+    @Transactional
     public void registerMember(RegisterReqDto request, String mode) {
         boolean memberFound = memberRepository.existsByUsername(request.getUsername());
         if (memberFound) {
@@ -80,15 +108,16 @@ public class MemberServiceImpl implements MemberService {
         }
 
         // 2. Tạo member mới
-        Member newMember = new Member();
-        newMember.setUsername(request.getUsername());
-        newMember.setPassword(passwordEncoder.encode(request.getPassword())); // mã hóa luôn
-        newMember.setFullName(request.getFullName());
-        newMember.setEmail(request.getEmail());
-        newMember.setPhone(request.getPhone());
-        newMember.setAddress(request.getAddress());
-        newMember.setImageUrl(request.getImageUrl());
-        newMember.setGender(request.getGender());
+        Member newMember = Member.builder()
+                .username(request.getUsername())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .fullName(request.getFullName())
+                .email(request.getEmail())
+                .phone(request.getPhone())
+                .address(request.getAddress())
+                .imageUrl(request.getImageUrl())
+                .gender(request.getGender())
+                .build();
 
         // 3. Gán role nếu có mode
         RoleType type = RoleType.SUPPORT.name().equalsIgnoreCase(mode) ? RoleType.SUPPORT : RoleType.CUSTOMER;
@@ -108,6 +137,7 @@ public class MemberServiceImpl implements MemberService {
      * @throws ApiException nếu mật khẩu cũ không đúng hoặc người dùng không tồn tại.
      */
     @Override
+    @Transactional
     public void changePassword(String username, ChangePasswordReqDto request) {
 
         try {
@@ -135,8 +165,14 @@ public class MemberServiceImpl implements MemberService {
     }
 
     /**
-     * @param request
-     * @return
+     * Retrieves a paginated list of members based on the given search criteria.
+     *
+     * @param request the object containing search criteria such as page number, page size,
+     *                and optional keyword for filtering members.
+     * @return a {@code PaginationResDto<MemberResDto>} containing the current page's data,
+     *         pagination details (like total elements, total pages, etc.), and flags
+     *         indicating the position within the pagination (e.g., if this is the first
+     *         or last page).
      */
     @Override
     public PaginationResDto<MemberResDto> getAllMember(MemberSearchReqDto request) {
@@ -146,7 +182,7 @@ public class MemberServiceImpl implements MemberService {
         // Kiểm tra xem có từ khóa tìm kiếm không
         if (request.getKeyword() != null && !request.getKeyword().isEmpty()) {
             String keyword = request.getKeyword().trim();
-            memberPage = memberRepository.findByUsernameOrEmail(keyword, keyword, pageable);
+            memberPage = memberRepository.searchByKeyword(keyword, keyword, pageable);
         } else {
             // Nếu không có từ khóa, trả về tất cả
             memberPage = memberRepository.findAll(pageable);
@@ -154,7 +190,7 @@ public class MemberServiceImpl implements MemberService {
 
         // Chuyển đổi danh sách đối tượng Member (Entity) sang danh sách MemberResDto (DTO).
         List<MemberResDto> memberResDtoList = memberPage.getContent().stream()
-                .map(this::convertToDto) // Sử dụng stream để ánh xạ từng đối tượng.
+                .map(memberMapper::toDto) // Sử dụng stream để ánh xạ từng đối tượng.
                 .collect(Collectors.toList());
 
         // Chuyển đổi Page thành PaginationResponse
@@ -172,30 +208,15 @@ public class MemberServiceImpl implements MemberService {
     }
 
     /**
-     * @param username
-     * @return
-     * @throws UsernameNotFoundException
+     * Loads the user details associated with the provided username.
+     *
+     * @param username the username of the user whose details are to be retrieved
+     * @return the UserDetails object containing the user's information
+     * @throws UsernameNotFoundException if no user is found with the specified username
      */
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+    @NonNull
+    public UserDetails loadUserByUsername(@NonNull String username) throws UsernameNotFoundException {
         return memberRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
-    }
-
-    /**
-     * Phương thức helper để chuyển đổi một đối tượng Member sang MemberResDto.
-     * Việc tách riêng logic chuyển đổi giúp code rõ ràng và dễ bảo trì.
-     *
-     * @param member Đối tượng Member từ cơ sở dữ liệu.
-     * @return MemberResDto tương ứng.
-     */
-    private MemberResDto convertToDto(Member member) {
-        MemberResDto dto = new MemberResDto();
-        dto.setId(member.getId());
-        dto.setUsername(member.getUsername());
-        dto.setEmail(member.getEmail());
-        dto.setAddress(member.getAddress());
-        dto.setFullName(member.getFullName());
-        dto.setImageUrl(member.getImageUrl());
-        return dto;
     }
 }

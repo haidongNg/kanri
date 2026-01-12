@@ -4,6 +4,7 @@ import com.sys.kanri.entities.Member;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -11,7 +12,8 @@ import java.util.Optional;
 @Repository
 public interface MemberRepository extends JpaRepository<Member, Long> {
     Optional<Member> findByUsername(String username);
-    Page<Member> findByUsernameOrEmail(String username, String email, Pageable pageable);
+    @Query("SELECT m FROM members m WHERE lower(m.username) LIKE lower(concat('%', :keyword, '%')) OR lower(m.email) LIKE lower(concat('%', :keyword, '%'))")
+    Page<Member> searchByKeyword(String username, String email, Pageable pageable);
     boolean existsByUsername(String username);
     boolean existsByEmail(String email);
 }

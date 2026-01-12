@@ -6,7 +6,7 @@ spring:
   application:
     name: kanri
   datasource:
-    url: jdbc:postgresql://db:5432/kanri_system
+    url: jdbc:postgresql://localhost:5432/kanri_system
     username: kanri_sys
     password: kanri_sys
     driver-class-name: org.postgresql.Driver
@@ -33,4 +33,5 @@ spring:
 
 jwt:
   secret: "SGVsbG8gSmF2YSBJc2FueG9vbCBUaGlzIHNlY3JldCBLZXkgZm9yIEpXVCAoMjU2IGJpdCBTZWN1cmUp"
-  expiration: 3600000   # 1h (ms)
+  expiration: 3600000   # giờ (Access Token)
+  refresh-expiration: 604800000 # 7 ngày (Refresh Token)

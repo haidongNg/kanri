@@ -10,6 +10,7 @@ import com.sys.kanri.services.MemberService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
@@ -42,11 +43,10 @@ public class AuthServiceImpl implements AuthService {
      *
      * @param username the username provided by the client
      * @param password the raw password provided by the client
-     * @param response the HTTP response where the JWT cookie will be set
      * @throws RuntimeException if authentication fails
      */
     @Override
-    public AuthResDto authenticate(String username, String password, HttpServletResponse response) {
+    public AuthResDto authenticate(String username, String password) {
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
         } catch (AuthenticationException e) {
@@ -54,17 +54,41 @@ public class AuthServiceImpl implements AuthService {
         }
 
         Member memberDetail = (Member) memberService.loadUserByUsername(username);
+        String accessToken = jwtService.generateAccessToken(Map.of("role", memberDetail.getRole().getName()), memberDetail.getUsername());
+        String refreshToken = jwtService.generateRefreshToken(memberDetail.getUsername());
 
-        String accessToken = jwtService.generateToken(Map.of("role", memberDetail.getRole().getName()), memberDetail.getUsername());
-        Cookie cookie = new Cookie("accessToken", accessToken);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(false); // ⚠ true nếu HTTPS
-        cookie.setPath("/");
-        cookie.setMaxAge((int) (jwtService.getExpiration() / 1000));
-
-        response.addCookie(cookie);
         AuthResDto result = new AuthResDto();
         result.setAccessToken(accessToken);
+        result.setRefreshToken(refreshToken);
+        return result;
+    }
+
+    @Override
+    public AuthResDto refreshToken(String refreshToken) {
+        // 1. Kiểm tra token có null không
+        if (refreshToken == null || refreshToken.isEmpty()) {
+            throw new ApiException("Refresh Token không tồn tại", "AUTH_401", HttpStatus.UNAUTHORIZED);
+        }
+
+        // 2. Lấy username từ token
+        String username = jwtService.extractUsername(refreshToken);
+        Member member = (Member) memberService.loadUserByUsername(username);
+
+        // 3. Validate token
+        if (!jwtService.isTokenValid(refreshToken, member.getUsername())) {
+            throw new ApiException("Refresh Token hết hạn hoặc không hợp lệ", "AUTH_403", HttpStatus.FORBIDDEN);
+        }
+
+        // 4. Tạo Access Token mới
+        String newAccessToken = jwtService.generateAccessToken(
+                Map.of("role", member.getRole().getName()),
+                member.getUsername()
+        );
+
+        // 5. Trả về
+        AuthResDto result = new AuthResDto();
+        result.setAccessToken(newAccessToken);
+        result.setRefreshToken(refreshToken); // Giữ nguyên refresh token cũ (hoặc tạo mới nếu muốn xoay vòng)
         return result;
     }
 }

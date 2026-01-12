@@ -40,11 +40,13 @@ public class Member extends BaseEntity implements UserDetails {
     private Role role;
 
     @Override
+    @NonNull
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return Collections.singletonList(role);
     }
 
     @Override
+    @NonNull
     public String getUsername() {
         return username;
     }
@@ -55,7 +57,9 @@ public class Member extends BaseEntity implements UserDetails {
     }
 
     /**
-     * @return
+     * Indicates whether the user's account has expired. An expired account cannot be authenticated.
+     *
+     * @return true if the account is valid (not expired), false otherwise
      */
     @Override
     public boolean isAccountNonExpired() {
@@ -63,7 +67,9 @@ public class Member extends BaseEntity implements UserDetails {
     }
 
     /**
-     * @return
+     * Indicates whether the user's account is locked. A locked account cannot be authenticated.
+     *
+     * @return true if the account is not locked, false otherwise
      */
     @Override
     public boolean isAccountNonLocked() {
@@ -71,7 +77,9 @@ public class Member extends BaseEntity implements UserDetails {
     }
 
     /**
-     * @return
+     * Indicates whether the user's credentials are non-expired. Expired credentials prevent authentication.
+     *
+     * @return true if the user's credentials are valid (not expired), false otherwise
      */
     @Override
     public boolean isCredentialsNonExpired() {
@@ -79,7 +87,10 @@ public class Member extends BaseEntity implements UserDetails {
     }
 
     /**
-     * @return
+     * Indicates whether the user's account is enabled.
+     * An enabled account can be authenticated and accessed.
+     *
+     * @return true if the account is enabled, false otherwise
      */
     @Override
     public boolean isEnabled() {
